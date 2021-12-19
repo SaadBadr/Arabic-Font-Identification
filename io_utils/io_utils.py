@@ -38,11 +38,22 @@ from random import randrange
 
 # # 2. Read Labeled Images
 
-# In[2]:
+# In[1]:
 
 
 def read_data(dataset_path='./ACdata_base', flags=0, debug=False):
-    
+    """ read the dataset from a given path
+
+    Args:
+        dataset_path: the path of the dataset directory
+        flags: opencv imread flags (default 0)
+        debug: print debug data on reading each file (default False)
+        
+    Returns:
+        dataset_images: array contains the dataset images
+        dataset_labels: array contains the labels of the dataset images (range: [0, 8])
+    """
+        
     dataset_images = []
     dataset_labels = []
 
@@ -62,10 +73,19 @@ def read_data(dataset_path='./ACdata_base', flags=0, debug=False):
 
 # # 3. Read Classes Names
 
-# In[3]:
+# In[2]:
 
 
 def read_classes(names_path='./ACdata_base/names.txt'):
+    """ read the classes names
+
+    Args:
+        names_path: the path of the text files containing the classes names in order
+
+    Returns:
+        classes: array contains the name of each class
+    """
+
     classes = []
     with open(names_path) as f:
         for line in f:
@@ -76,10 +96,24 @@ def read_classes(names_path='./ACdata_base/names.txt'):
 
 # # 4. Split data to train and test
 
-# In[4]:
+# In[3]:
 
 
 def split_data(X, y, test_size=0.33):
+    """ split the data into training and testing data 
+
+    Args:
+        X: the data
+        y: labels of the data
+        test_size: ratio of test size (default 0.33)
+
+    Returns:
+        X_train: training data
+        X_test: testing data
+        y_train: training labels
+        y_test: testing labels
+    """
+
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
     return X_train, X_test, y_train, y_test
 
@@ -119,7 +153,7 @@ if __name__ == '__main__':
     testing()
 
 
-# In[9]:
+# In[7]:
 
 
 def create_py():
