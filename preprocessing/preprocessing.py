@@ -18,7 +18,7 @@
 # 6. Extract Text only
 # 7. Testing
 
-# In[1]:
+# In[241]:
 
 
 ##################################################### imports #####################################################
@@ -41,7 +41,7 @@ from skimage.segmentation import flood_fill
 # - Input: --
 # - Output: --
 
-# In[2]:
+# In[242]:
 
 
 def analyze_histogram(binary, show_hist=False):
@@ -90,7 +90,7 @@ def analyze_histogram(binary, show_hist=False):
 
 # # 2. Binarization
 
-# In[3]:
+# In[243]:
 
 
 def binarize(image):
@@ -112,9 +112,45 @@ def binarize(image):
     return corrected_binary_image
 
 
+# In[244]:
+
+
+#  np.array([[0,1,0],[1,1,1],[0,1,0]])
+
+
+# In[245]:
+
+
+def crop(img):
+    # morph_img = img.copy()
+    morph_img = img
+    # element = cv2.getStructuringElement(cv2.MORPH_RECT,(3,3),( 0, 0 ))
+    # element = cv2.getStructuringElement(cv2.MORPH_CROSS,(3,3))
+    # morph_img = cv2.morphologyEx(morph_img, cv2.MORPH_OPEN, element)
+    # morph_img = cv2.morphologyEx(morph_img, cv2.MORPH_CLOSE, element)
+
+    rows = morph_img.sum(axis=1)
+    cols = morph_img.sum(axis=0)
+    rows = rows != 0
+    cols = cols != 0
+
+    c = np.where(cols == cols.max())[0]
+    r = np.where(rows == rows.max())[0]
+
+    x = c[0], c[-1]
+    y = r[0], r[-1]
+    
+    try:
+        cropped_img = img[y[0]:y[1], x[0]:x[1]]
+    except:
+        cropped_img = img
+
+    return cropped_img
+
+
 # # 3. Extract Edges
 
-# In[4]:
+# In[246]:
 
 
 def extract_edges(image):
@@ -127,6 +163,10 @@ def extract_edges(image):
         edge_image: The edge extracted image
     """
     # Blur the image for better edge detection
+    if image.max() == 1:
+        image = image * 255
+        image = image.astype(np.uint8)
+
     img_blur = cv2.GaussianBlur(image,(3,3), sigmaX=0, sigmaY=0)
 
     # Use Canny edge detection to extract edges
@@ -140,7 +180,7 @@ def extract_edges(image):
 
 # # 4. Extract Skeleton
 
-# In[5]:
+# In[247]:
 
 
 def extract_skeleton(image):
@@ -153,30 +193,33 @@ def extract_skeleton(image):
         skeleton: The skeletonized image
     """
     # We start by binarizing the image
-    binary = binarize(image)
+    # binary = binarize(image)
 
     # Use Skimage's skeletonize method with the array representation of the binary image as input
-    skeleton = skeletonize(np.asarray(binary))
+    skeleton = skeletonize(np.asarray(image))
 
     return skeleton
 
 
 # # 5. Separate Diacritics from Text
 
-# In[6]:
+# In[248]:
 
 
 def separate_diacritics_and_text_utility(image):
     """Utility function used by separate_diacritics_and_text
     """
     
-    binary = binarize(image)    
-    height = (binary.shape)[0]
-    white_pixels_in_row = np.zeros(height, dtype=np.uint32)
-    
+    # binary = binarize(image)  
+    binary = image  
+
+    # height = (binary.shape)[0]
+    # white_pixels_in_row = np.zeros(height, dtype=np.uint32)  
     # Calculate number of white pixels in a row
-    for row in range(height - 1):
-        white_pixels_in_row[row] = (binary[row, :] == 1).sum()
+    # for row in range(height - 1):
+        # white_pixels_in_row[row] = (binary[row, :] == 1).sum()
+
+    white_pixels_in_row = binary.sum(axis=1)
 
     # Get the row with most white pixels (This row would contain only text and commas no diacritics
     #                                        as it is an imaginary line where text is placed on)
@@ -197,13 +240,15 @@ def separate_diacritics_and_text_utility(image):
             diacritics_image = flood_fill(diacritics_image, (baseline_row, i), 0)
         elif rowPixels[i] == 0 and rowPixels[i+1] == 1:
             diacritics_image = flood_fill(diacritics_image, (baseline_row, i+1), 0)
-
+    
+    # print(baseline_row, binary.shape[0])
     text_image = binary - diacritics_image
+    cv2.line(text_image,(0,baseline_row),(image.shape[1],baseline_row),(0,0,255),2)
     
     return diacritics_image, text_image
 
 
-# In[7]:
+# In[249]:
 
 
 def separate_diacritics_and_text(image, diacritics_ratio=0.2, max_iterations=1000):
@@ -232,12 +277,12 @@ def separate_diacritics_and_text(image, diacritics_ratio=0.2, max_iterations=100
 
 # # 6. Testing
 
-# In[8]:
+# In[250]:
 
 
 def testing():
     
-    # importing reading data module
+    # importing io module
     import sys
     sys.path.insert(1, "./../io_utils/")
     from io_utils import read_data, read_classes
@@ -257,21 +302,23 @@ def testing():
             ranges.append(idx)
     ranges.append(len(dataset_labels))
 
+    # plt.imshow(crop(binarize(cv2.imread("../ACdata_base/9/1624.jpg", 0))), cmap='gray')
+
     # Choosing a random example from each class and apply the preprocessing Functions on it
     for i, class_name in enumerate(classes_names):
-                    
         index = randrange(ranges[i], ranges[i+1])
         test_image = dataset_images[index]
-
-        binary_image = binarize(test_image)
-        assert len(np.unique(np.asarray(binary_image))) == 2
 
         if(i == 8):
             test_image = cv2.imread("../ACdata_base/9/1624.jpg", 0)
 
-        edge_image = extract_edges(test_image)
-        skeleton_image = extract_skeleton(test_image)
-        diacritics_image, text_image = separate_diacritics_and_text(test_image)
+        binary_image = binarize(test_image)
+        cropped_image = crop(binary_image)
+        assert len(np.unique(np.asarray(binary_image))) == 2
+
+        edge_image = extract_edges(cropped_image)
+        skeleton_image = extract_skeleton(cropped_image)
+        diacritics_image, text_image = separate_diacritics_and_text(cropped_image)
 
         f, axarr = plt.subplots(3,2, figsize=(15, 10))
         f.suptitle(class_name + " test")
@@ -279,8 +326,10 @@ def testing():
         axarr[0,0].imshow(test_image, cmap='gray')
         axarr[0,0].set_title("Original")
 
-        axarr[0,1].imshow(binary_image, cmap='gray')
-        axarr[0,1].set_title("Binary")
+        # axarr[0,1].imshow(binary_image, cmap='gray')
+        # axarr[0,1].set_title("Binary")
+        axarr[0,1].imshow(cropped_image, cmap='gray')
+        axarr[0,1].set_title("Cropped Binary")
 
         axarr[1,0].imshow(edge_image, cmap='gray')
         axarr[1,0].set_title("Edge")
@@ -296,21 +345,36 @@ def testing():
     
 
 
-# In[9]:
+# In[251]:
+
+
+# # importing io module
+# import sys
+# sys.path.insert(1, "./../io_utils/")
+# from io_utils import read_data, read_classes
+
+# # reading data and class names
+# classes_names = read_classes('../ACdata_base/names.txt')
+# dataset_images, dataset_labels = read_data('../ACdata_base/')
+
+
+# 
+
+# In[252]:
 
 
 if __name__ == '__main__':
     testing()
 
 
-# In[10]:
+# In[253]:
 
 
 def create_py():
     get_ipython().system('jupyter nbconvert --to script preprocessing.ipynb')
 
 
-# In[11]:
+# In[254]:
 
 
 if __name__ == '__main__':
