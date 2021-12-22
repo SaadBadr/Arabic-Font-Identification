@@ -18,7 +18,7 @@
 # 6. Extract Text only
 # 7. Testing
 
-# In[241]:
+# In[15]:
 
 
 ##################################################### imports #####################################################
@@ -41,7 +41,7 @@ from skimage.segmentation import flood_fill
 # - Input: --
 # - Output: --
 
-# In[242]:
+# In[16]:
 
 
 def analyze_histogram(binary, show_hist=False):
@@ -90,7 +90,7 @@ def analyze_histogram(binary, show_hist=False):
 
 # # 2. Binarization
 
-# In[243]:
+# In[17]:
 
 
 def binarize(image):
@@ -112,13 +112,13 @@ def binarize(image):
     return corrected_binary_image
 
 
-# In[244]:
+# In[18]:
 
 
 #  np.array([[0,1,0],[1,1,1],[0,1,0]])
 
 
-# In[245]:
+# In[19]:
 
 
 def crop(img):
@@ -150,7 +150,7 @@ def crop(img):
 
 # # 3. Extract Edges
 
-# In[246]:
+# In[20]:
 
 
 def extract_edges(image):
@@ -180,7 +180,7 @@ def extract_edges(image):
 
 # # 4. Extract Skeleton
 
-# In[247]:
+# In[21]:
 
 
 def extract_skeleton(image):
@@ -196,14 +196,14 @@ def extract_skeleton(image):
     # binary = binarize(image)
 
     # Use Skimage's skeletonize method with the array representation of the binary image as input
-    skeleton = skeletonize(np.asarray(image))
+    skeleton = skeletonize(np.asarray(image)).astype(np.uint8)
 
     return skeleton
 
 
 # # 5. Separate Diacritics from Text
 
-# In[248]:
+# In[22]:
 
 
 def separate_diacritics_and_text_utility(image):
@@ -248,10 +248,10 @@ def separate_diacritics_and_text_utility(image):
     return diacritics_image, text_image
 
 
-# In[249]:
+# In[23]:
 
 
-def separate_diacritics_and_text(image, diacritics_ratio=0.2, max_iterations=1000):
+def separate_diacritics_and_text(image, diacritics_ratio=0.2, max_iterations=10, text_convergence_threshold=5):
     """Gets an input image of the arabic text and returns an image containing only the diacritics in it and another
     image with the text as a tuple (diacritics, text)
         
@@ -268,6 +268,8 @@ def separate_diacritics_and_text(image, diacritics_ratio=0.2, max_iterations=100
     # while diacritics_image.sum() > diacritics_image.size * diacritics_ratio:
     while diacritics_image.sum() > text_image.sum() * diacritics_ratio and max_iterations:
         diacritics_image, text_image_1 = separate_diacritics_and_text_utility(diacritics_image)
+        if text_image_1.sum() < text_convergence_threshold:
+            break
         text_image = text_image + text_image_1
         max_iterations = max_iterations - 1
         
@@ -277,7 +279,7 @@ def separate_diacritics_and_text(image, diacritics_ratio=0.2, max_iterations=100
 
 # # 6. Testing
 
-# In[250]:
+# In[24]:
 
 
 def testing():
@@ -345,7 +347,7 @@ def testing():
     
 
 
-# In[251]:
+# In[25]:
 
 
 # # importing io module
@@ -360,21 +362,21 @@ def testing():
 
 # 
 
-# In[252]:
+# In[26]:
 
 
-if __name__ == '__main__':
-    testing()
+# if __name__ == '__main__':
+    # testing()
 
 
-# In[253]:
+# In[27]:
 
 
 def create_py():
     get_ipython().system('jupyter nbconvert --to script preprocessing.ipynb')
 
 
-# In[254]:
+# In[28]:
 
 
 if __name__ == '__main__':

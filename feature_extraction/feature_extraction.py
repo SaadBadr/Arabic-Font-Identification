@@ -24,7 +24,7 @@
 # - Input: --
 # - Output: --
 
-# In[339]:
+# In[1]:
 
 
 ##################################################### imports #####################################################
@@ -38,7 +38,7 @@ from skimage.feature import hog
 # # 2. Text thickness (Tth)
 # Stroke thickness plays an important role in defining the style. Some styles use a flat pen, whereas some others use a pointed one. In some styles, calligraphers alter the thickness while writing (via pushing down the pen or the opposite), whereas in others, the thickness is always preserved. Modeling such a feature in form of a descriptor will help the machine to understand more specificities of each style. Text thickness (Tth) descriptor codifies the appearance frequency of different line thicknesses in a text image. To extract this descriptor, we employ both the skeleton and edge image, and thickness is determined by the distance between skeleton and edges.
 
-# In[340]:
+# In[2]:
 
 
 def Tth(skeleton_img, edge_img, bins=5):
@@ -90,7 +90,7 @@ def Tth(skeleton_img, edge_img, bins=5):
 # Thereafter,  a score is calculated for a test image by calculating the distance between the two pre-calculated HuMoments and the test image diacritics contours HuMoments.
 # 
 
-# In[341]:
+# In[3]:
 
 
 
@@ -128,7 +128,7 @@ def precalculate_hu(path="sds.png", save=False, save_filename="sds_hue_moments")
     return hu_moments
 
 
-# In[342]:
+# In[4]:
 
 
 def SDs(img, recalculate=False, hu_file="sds_hue_moments.npy", path="sds.png"):
@@ -182,7 +182,7 @@ def SDs(img, recalculate=False, hu_file="sds_hue_moments.npy", path="sds.png"):
     return [max_hu]
 
 
-# In[343]:
+# In[5]:
 
 
 def Diacritics(d_img):
@@ -216,7 +216,7 @@ def Diacritics(d_img):
 # WOr algorithm was used to distinguish Diwani from other styles. Diwani style yieldan orientation average of about 45 degrees compared to 0 degrees by other styles.
 # 
 
-# In[344]:
+# In[6]:
 
 
 def WOr(img, debug=False):
@@ -309,7 +309,7 @@ def WOr(img, debug=False):
     
 
 
-# In[345]:
+# In[7]:
 
 
 def HVSL(edge_image):
@@ -327,50 +327,29 @@ def HVSL(edge_image):
 
     # A constant defining the minimum percentage of the row/column that a line should have
     # The number of consecutive pixels divided by the total height/width should be at least this ratio to be considered a line
-    MINIMUM_LINE_LENGTH_PERCENTAGE = 0.2
+    MINIMUM_VLINE_LENGTH_PERCENTAGE = 0.02
+    MINIMUM_HLINE_LENGTH_PERCENTAGE = 0.015
 
-    vertical_horizontal_lines_freq = 0
-    vertical_horizontal_lines_pixels = 0
     height, width = edge_image.shape
+    vertical_horizontal_lines_freq = 0
+    
+    vertical_size = max(int(MINIMUM_VLINE_LENGTH_PERCENTAGE * height), 1)
+    horizontal_size = max(int(MINIMUM_HLINE_LENGTH_PERCENTAGE * width), 1)
+    horizontalStructure = cv2.getStructuringElement(cv2.MORPH_RECT, (horizontal_size, 1))
+    verticalStructure = cv2.getStructuringElement(cv2.MORPH_RECT, (1, vertical_size))
+    mask1 = cv2.morphologyEx(edge_image, cv2.MORPH_OPEN, horizontalStructure)
+    mask2 = cv2.morphologyEx(edge_image, cv2.MORPH_OPEN, verticalStructure)
+    
+    contours_h, _ = cv2.findContours(mask1, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours_v, _ = cv2.findContours(mask2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    bounding_boxes_h = [cv2.boundingRect(contour) for contour in contours_h]
+    bounding_boxes_v = [cv2.boundingRect(contour) for contour in contours_v]
+    vertical_lines = [bounding_box[3] for bounding_box in bounding_boxes_v]
+    horizontal_lines = [bounding_box[2] for bounding_box in bounding_boxes_h]
 
-    for row in range(height):
-        # Copy all pixels of this row to an array (for better readability)
-        rowPixels = edge_image[row, :]
-      
-        line_pixels = 0
-        # Loop through all pixels in row to calculate the number of horizontal lines
-        # We only increment the counter when:
-        #       1. There's a transition from white to black (to calc the line only once at its beginning)
-        #       2. The ratio of consecutive pixels to the whole row length (width of image) is greater than (or equal) the threshold 
-        for i in range(len(rowPixels) - 1):
-            if rowPixels[i] == 1 and rowPixels[i+1] == 0:
-                if line_pixels / width >= MINIMUM_LINE_LENGTH_PERCENTAGE:
-                    vertical_horizontal_lines_freq += 1
-                    vertical_horizontal_lines_pixels += line_pixels
-                line_pixels = 0
-            if rowPixels[i] == 1:
-                line_pixels += 1
+    vertical_horizontal_lines_pixels = sum(vertical_lines) + sum(horizontal_lines)
+    vertical_horizontal_lines_freq = len(vertical_lines) + len(horizontal_lines)
 
-    for col in range(width):
-        # Copy all pixels of this column to an array (for better readability)
-        colPixels = edge_image[:, col]
-
-        line_pixels = 0
-        # Loop through all pixels in column to calculate the number of vertical lines
-        # We only increment the counter when:
-        #       1. There's a transition from white to black (to calc the line only once at its beginning)
-        #       2. The ratio of consecutive pixels to the whole column length (height of image) is greater than (or equal) the threshold 
-        for i in range(len(colPixels) - 1):
-            if colPixels[i] == 1 and colPixels[i+1] == 0:
-                if line_pixels / height >= MINIMUM_LINE_LENGTH_PERCENTAGE:
-                    vertical_horizontal_lines_freq += 1
-                    vertical_horizontal_lines_pixels += line_pixels
-                line_pixels = 0
-            if colPixels[i] == 1:
-                line_pixels += 1
-
-    # Get the number of pixels in the whole image that are white (edges)
-    #edge_pixels = (edge_image[:, :] == 1).sum()
     edge_pixels = edge_image.sum()
 
     lines_edges_ratio = vertical_horizontal_lines_pixels / edge_pixels
@@ -380,7 +359,7 @@ def HVSL(edge_image):
     return HVSL_features
 
 
-# In[346]:
+# In[8]:
 
 
 def LVL(skeleton_image):
@@ -402,46 +381,20 @@ def LVL(skeleton_image):
 
     # A constant defining the minimum percentage of the column that a line should have
     # The number of consecutive pixels divided by the total height should be at least this ratio to be considered a line
-    MINIMUM_LINE_HEIGHT_PERCENTAGE = 0.1
+    MINIMUM_VLINE_LENGTH_PERCENTAGE = 0.03
 
+    vertical_lines_freq = 0
     height, width = skeleton_image.shape
-
-    text_top = 0
-    for row in range(height):
-        if skeleton_image[row, :].sum() != 0:
-            break
-        else:
-            text_top += 1
-        
-    text_bottom = height
-    for row in range(height - 1, 0, -1):
-        if skeleton_image[row, :].sum() != 0:
-            break
-        else:
-            text_bottom -= 1
-    
-    text_height = text_bottom - text_top
-
     vertical_lines = []
+    vertical_size = max(int(MINIMUM_VLINE_LENGTH_PERCENTAGE * height), 1)
+    verticalStructure = cv2.getStructuringElement(cv2.MORPH_RECT, (1, vertical_size))
 
-    for col in range(width):
-        # Copy all pixels of this column to an array (for better readability)
-        colPixels = skeleton_image[:, col]
-
-        line_pixels = 0
-        # Loop through all pixels in column to calculate the number of vertical lines
-        # We only increment the counter when:
-        #       1. There's a transition from white to black (to calc the line only once at its beginning)
-        #       2. The ratio of consecutive pixels to the whole column length (height of image) is greater than (or equal) the threshold 
-        for i in range(len(colPixels) - 1):
-            if colPixels[i] == 1 and colPixels[i+1] == 0:
-                if line_pixels / height >= MINIMUM_LINE_HEIGHT_PERCENTAGE:
-                    vertical_lines.append(line_pixels)
-                line_pixels = 0
-            if colPixels[i] == 1:
-                line_pixels += 1
-
-    vertical_lines_freq = len(vertical_lines)
+    mask2 = cv2.morphologyEx(skeleton_image, cv2.MORPH_OPEN, verticalStructure)
+    
+    contours, _ = cv2.findContours(mask2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    bounding_boxes = [cv2.boundingRect(contour) for contour in contours]
+    vertical_lines = [bounding_box[3] for bounding_box in bounding_boxes]
+    vertical_lines_freq = len(bounding_boxes)
 
     if vertical_lines_freq < 1:
         highest_vertical_line_length = 0
@@ -450,7 +403,7 @@ def LVL(skeleton_image):
         highest_vertical_line_length = max(vertical_lines)
         vertical_lines_variance = np.var(vertical_lines)
 
-
+    text_height = height
     if text_height < 1:
         highest_vertical_line_to_text_height_ratio = 0
     else:   
@@ -458,11 +411,11 @@ def LVL(skeleton_image):
     
 
     LVL = [text_height, vertical_lines_freq, highest_vertical_line_length, highest_vertical_line_to_text_height_ratio, vertical_lines_variance]
-
+    
     return LVL
 
 
-# In[347]:
+# In[9]:
 
 
 def ToE_ToS(image, bins=9):
@@ -482,7 +435,7 @@ def ToE_ToS(image, bins=9):
     return h
 
 
-# In[348]:
+# In[10]:
 
 
 # # importing io module
@@ -496,7 +449,7 @@ def ToE_ToS(image, bins=9):
 # dataset_images, dataset_labels = read_data('../ACdata_base/')
 
 
-# In[349]:
+# In[11]:
 
 
 def HPP(image, bins=10, croped=True):
@@ -518,7 +471,7 @@ def HPP(image, bins=10, croped=True):
 
 # # 3. Testing
 
-# In[350]:
+# In[12]:
 
 
 def testing():
@@ -560,7 +513,7 @@ def testing():
         test_image = dataset_images[index]
         binary_image = binarize(test_image)
         cropped_image = crop(binary_image)
-        skeleton_image = extract_skeleton(binary_image)
+        skeleton_image = extract_skeleton(binary_image).astype(np.uint8)
         edge_image = extract_edges(binary_image)
         diacritics_image, text_image = separate_diacritics_and_text(binary_image)
 
@@ -596,21 +549,21 @@ def testing():
         axarr.set_title(class_name)
 
 
-# In[351]:
+# In[13]:
 
 
 # if __name__ == '__main__':
     # testing()
 
 
-# In[352]:
+# In[14]:
 
 
 def create_py():
     get_ipython().system('jupyter nbconvert --to script feature_extraction.ipynb')
 
 
-# In[353]:
+# In[15]:
 
 
 if __name__ == '__main__':
