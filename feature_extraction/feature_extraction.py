@@ -24,7 +24,7 @@
 # - Input: --
 # - Output: --
 
-# In[1]:
+# In[84]:
 
 
 ##################################################### imports #####################################################
@@ -33,12 +33,14 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 from skimage.feature import hog
+from scipy import ndimage
+from skimage.feature import local_binary_pattern
 
 
 # # 2. Text thickness (Tth)
 # Stroke thickness plays an important role in defining the style. Some styles use a flat pen, whereas some others use a pointed one. In some styles, calligraphers alter the thickness while writing (via pushing down the pen or the opposite), whereas in others, the thickness is always preserved. Modeling such a feature in form of a descriptor will help the machine to understand more specificities of each style. Text thickness (Tth) descriptor codifies the appearance frequency of different line thicknesses in a text image. To extract this descriptor, we employ both the skeleton and edge image, and thickness is determined by the distance between skeleton and edges.
 
-# In[2]:
+# In[85]:
 
 
 def Tth(skeleton_img, edge_img, bins=5):
@@ -90,7 +92,7 @@ def Tth(skeleton_img, edge_img, bins=5):
 # Thereafter,  a score is calculated for a test image by calculating the distance between the two pre-calculated HuMoments and the test image diacritics contours HuMoments.
 # 
 
-# In[3]:
+# In[86]:
 
 
 
@@ -128,7 +130,7 @@ def precalculate_hu(path="sds.png", save=False, save_filename="sds_hue_moments")
     return hu_moments
 
 
-# In[4]:
+# In[87]:
 
 
 def SDs(img, recalculate=False, hu_file="sds_hue_moments.npy", path="sds.png"):
@@ -182,33 +184,60 @@ def SDs(img, recalculate=False, hu_file="sds_hue_moments.npy", path="sds.png"):
     return [max_hu]
 
 
-# In[5]:
+# In[88]:
 
 
-def Diacritics(d_img):
-    """Gets an input image of the diacritics image and return a score determines how those diacritics are similar to mohakek and thuluth
+# # importing io module
+# import sys
+# sys.path.insert(1, "./../io_utils/")
+# sys.path.insert(1, "./../preprocessing/")
+# from io_utils import read_data, read_classes
+# from preprocessing import *
+# # reading data and class names
+# classes_names = read_classes('../ACdata_base/names.txt')
+# dataset_images, dataset_labels = read_data('../ACdata_base/')
+
+
+# In[89]:
+
+
+def Diacritics(d_img, bins=12):
+    return np.histogram(d_img.sum(axis=0), bins=bins)[0]/d_img.shape[1]
+
+
+# In[90]:
+
+
+# def Diacritics(d_img):
+#     """Gets an input image of the diacritics image and return a score determines how those diacritics are similar to mohakek and thuluth
         
-    Args:
-        diacritics_image: A binary image containing only diacritics (white text on black bg)
-        recalculate: recalculate precalculate humoments values (default = False)
-        path: path of image to recalculate humoments from (default = "sds.png")
-        hu_file: file to read precalculated hu_moments from it or write to it in case of recalculate = True (default = "sds_hue_moments.npy")
+#     Args:
+#         diacritics_image: A binary image containing only diacritics (white text on black bg)
+#         recalculate: recalculate precalculate humoments values (default = False)
+#         path: path of image to recalculate humoments from (default = "sds.png")
+#         hu_file: file to read precalculated hu_moments from it or write to it in case of recalculate = True (default = "sds_hue_moments.npy")
 
-    Returns:
-        score: determine how those diacritics are similar to mohakek and thuluth (more similar => larger score)
-    """
+#     Returns:
+#         score: determine how those diacritics are similar to mohakek and thuluth (more similar => larger score)
+#     """
     
-    # contours_d, _ = cv2.findContours(image=d_img, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_NONE)
-    # contours_t, _ = cv2.findContours(image=t_img, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_NONE)
-    # areas = []
-    # for contour in contours:
-    #     area = cv2.contourArea(contour)
-    #     areas.append(area)
+#     # contours_d, _ = cv2.findContours(image=d_img, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_NONE)
+#     # contours_t, _ = cv2.findContours(image=t_img, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_NONE)
+#     # areas = []
+#     # for contour in contours:
+#     #     area = cv2.contourArea(contour)
+#     #     areas.append(area)
 
-    # area_ratio = sum(areas)/(d_img.shape[0]*d_img.shape[1]) 
-    # return [d_img.sum()/img.sum()]    
-    # return cv2.matchShapes(d_img, im, cv2.CONTOURS_MATCH_I1, 0)
-    return cv2.HuMoments(cv2.moments(d_img)).flatten()
+#     # area_ratio = sum(areas)/(d_img.shape[0]*d_img.shape[1]) 
+#     # return [d_img.sum()/img.sum()]    
+#     # return cv2.matchShapes(d_img, im, cv2.CONTOURS_MATCH_I1, 0)
+#     return cv2.HuMoments(cv2.moments(d_img)).flatten()
+
+
+# In[ ]:
+
+
+
 
 
 # # 4. Words Orientation (WOr)
@@ -216,10 +245,103 @@ def Diacritics(d_img):
 # WOr algorithm was used to distinguish Diwani from other styles. Diwani style yieldan orientation average of about 45 degrees compared to 0 degrees by other styles.
 # 
 
-# In[6]:
+# In[91]:
 
 
-def WOr(img, debug=False):
+# def WOr(img, debug=False):
+#     """Gets an input image of the text without diacritics and return the mean orientation of words
+        
+#     Args:
+#         text_only_image: A binary image containing only text wihtout diacritics (white text on black bg)
+#         debug: if true, show the bounding box of words (default False)
+#     Returns:
+#         orientation_mean: the weighted mean of words orientation
+#     """
+
+#     contours, _ = cv2.findContours(image=img.copy(), mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_NONE)
+    
+#     orientations = []
+#     areas = []
+#     img = img.copy()
+#     if debug:
+#         rgb_img = cv2.cvtColor(img*255, cv2.COLOR_GRAY2RGB)
+
+#     # [vx,vy,x,y] = cv2.fitLine(contours[-1], cv2.DIST_L2,0,0.01,0.01)
+#     # return vx,vy,x,y
+#     # print(len(contours))
+#     for contour in contours:
+
+#         rows,cols = img.shape[:2]
+#         [vx,vy,x,y] = cv2.fitLine(contour, cv2.DIST_L2,0,0.01,0.01)
+#         # lefty = int((-x*vy/vx) + y)
+#         # righty = int(((cols-x)*vy/vx)+y)
+#         # cv2.line(img,(cols-1,righty),(0,lefty),(255,255,255),2)
+#         angle = np.rad2deg(np.arctan2(vy[0], vx[0]))
+#         area = cv2.contourArea(contour)
+
+#         orientations.append(angle)
+#         areas.append(area)
+#         continue
+#         rect = cv2.minAreaRect(contour)
+#         p, dimensions, orientation = rect
+#         # orientations.append(np.abs(orientation) % 60)
+#         orientations.append(np.abs(orientation))
+#         x,y,w,h = cv2.boundingRect(contour)
+#         # areas.append(h*w)
+#         areas.append(dimensions[0]*dimensions[1])
+#         # areas.append(w*h)
+#         # areas.append(w)
+        
+#         if debug:
+#             box = cv2.boxPoints(rect)
+#             box = np.int0(box)
+#             cv2.drawContours(rgb_img,[box],0,(255,255,255),1)
+    
+
+#     # # if debug:
+#     # plt.imshow(img, cmap="gray")
+#     # return 0
+
+#     # sum_areas = np.sum(areas)
+#     # if sum_areas > 0:
+#     #     # weighted_mean = np.dot(areas, orientations) / sum_areas
+#     #     weighted_mean = orientations[np.argmax(areas)]
+#     # else:
+#     #     weighted_mean = 0
+
+
+#     m = 3
+#     n = len(areas)
+#     if len(areas) > m:
+#         n = m
+
+#     w = []
+
+#     if len(orientations) > 0:
+#         w.append(np.var(orientations))
+#         w.append(np.mean(orientations))
+#         # w.append(orientations[np.argmax(areas)])
+#     else:
+#         w.append(0)
+#         w.append(0)
+#         # w.append(0)
+
+#     max_n = np.argpartition(areas, -n)[-n:]
+#     for i in range(len(max_n)-1,-1,-1):
+#         w.append(orientations[i])
+
+#     for i in range(m-n):
+#         w.append(0)
+
+#     # return [weighted_mean]
+#     return w
+    
+
+
+# In[92]:
+
+
+def WOr(img):
     """Gets an input image of the text without diacritics and return the mean orientation of words
         
     Args:
@@ -228,18 +350,44 @@ def WOr(img, debug=False):
     Returns:
         orientation_mean: the weighted mean of words orientation
     """
+    thetas = []
+    rhos = []
+    #img = morph_img
+    imgArea = img.shape[0] * img.shape[1]
+    # labeled, nr_objects = ndimage.label(img)
+    numLabels, _, stats, _ = cv2.connectedComponentsWithStats(img)
+    indexes = list(range(len(stats)))
+    # We sort the indeces list with heuristics being its key (Sorting heuristics and storing the indices of the sorted list)
+    indexes.sort(key=stats[:, cv2.CC_STAT_AREA].__getitem__, reverse=True)
+    # Then we map the actions_states list according to the indeces of the sorted list 
+    stats = list(map(stats.__getitem__, indexes))
 
-    contours, _ = cv2.findContours(image=img.copy(), mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_NONE)
+    for i in range(0, 5):
+        if i >= len(stats):
+            break
+        x = stats[i][cv2.CC_STAT_LEFT]
+        y = stats[i][cv2.CC_STAT_TOP]
+        w = stats[i][cv2.CC_STAT_WIDTH]
+        h = stats[i][cv2.CC_STAT_HEIGHT]
+        area = stats[i][cv2.CC_STAT_AREA]
+        if area < 0.001 * imgArea:
+            continue
+        bounded_image = img[y: y + h, x: x + w]
+        lines = cv2.HoughLines(bounded_image, 1, np.pi/180, 1)
+        if lines is not None:
+            line = lines[0][0]
+            rho = line[0]
+            theta = line[1]
+            if np.rad2deg(theta) > 60 or np.rad2deg(theta) < -10:
+                continue
+            rhos.append(rho)
+            thetas.append(theta)
+
+    contours, _ = cv2.findContours(img, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_NONE)
     
     orientations = []
     areas = []
-    img = img.copy()
-    if debug:
-        rgb_img = cv2.cvtColor(img*255, cv2.COLOR_GRAY2RGB)
-
-    # [vx,vy,x,y] = cv2.fitLine(contours[-1], cv2.DIST_L2,0,0.01,0.01)
-    # return vx,vy,x,y
-    # print(len(contours))
+    
     for contour in contours:
 
         rows,cols = img.shape[:2]
@@ -252,36 +400,8 @@ def WOr(img, debug=False):
 
         orientations.append(angle)
         areas.append(area)
-        continue
-        rect = cv2.minAreaRect(contour)
-        p, dimensions, orientation = rect
-        # orientations.append(np.abs(orientation) % 60)
-        orientations.append(np.abs(orientation))
-        x,y,w,h = cv2.boundingRect(contour)
-        # areas.append(h*w)
-        areas.append(dimensions[0]*dimensions[1])
-        # areas.append(w*h)
-        # areas.append(w)
-        
-        if debug:
-            box = cv2.boxPoints(rect)
-            box = np.int0(box)
-            cv2.drawContours(rgb_img,[box],0,(255,255,255),1)
     
-
-    # # if debug:
-    # plt.imshow(img, cmap="gray")
-    # return 0
-
-    # sum_areas = np.sum(areas)
-    # if sum_areas > 0:
-    #     # weighted_mean = np.dot(areas, orientations) / sum_areas
-    #     weighted_mean = orientations[np.argmax(areas)]
-    # else:
-    #     weighted_mean = 0
-
-
-    m = 3
+    m = 2
     n = len(areas)
     if len(areas) > m:
         n = m
@@ -298,18 +418,31 @@ def WOr(img, debug=False):
         # w.append(0)
 
     max_n = np.argpartition(areas, -n)[-n:]
+
     for i in range(len(max_n)-1,-1,-1):
         w.append(orientations[i])
 
     for i in range(m-n):
         w.append(0)
-
-    # return [weighted_mean]
-    return w
     
+    # return [weighted_mean]
+    if len(thetas) == 0:
+        thetas.append(0)
+    if len(rhos) == 0:
+        rhos.append(0)
+
+    for i in range(len(rhos), 5):
+        rhos.append(0)
+    for i in range(len(thetas), 5):
+        thetas.append(0)
+
+    w.append(np.mean(rhos))
+    w.append(np.mean(thetas))
+
+    return np.append(rhos, np.append(thetas, w))
 
 
-# In[7]:
+# In[93]:
 
 
 def HVSL(edge_image):
@@ -359,7 +492,7 @@ def HVSL(edge_image):
     return HVSL_features
 
 
-# In[8]:
+# In[94]:
 
 
 def LVL(skeleton_image):
@@ -415,48 +548,65 @@ def LVL(skeleton_image):
     return LVL
 
 
-# In[9]:
+# In[95]:
 
 
-def ToE_ToS(image, bins=9):
-    fd, hog_image = hog(image.astype(np.uint8), orientations=bins, pixels_per_cell=(4, 4),
-                    cells_per_block=(1, 1), visualize=True)
-    w, h = image.shape
-    # print("ToE", np.round(np.histogram(fd, bins=10)[0][2:] / (w * h), 3))
-    # h, _ = np.histogram(fd, bins=10)[0][2:] / (w * h)
+def ToE_ToS(image, bins=10):
+    """(Text orientation from Edges / Text orientation from Skeleton Descriptor)
+    Finds the orientation of edges / skeleton image by applying a sobel filter to capture the intensities of edges 
+        and the orientation of these edges 
 
-    h, _ = np.histogram(fd, range=(1, max(fd.max(),1)), bins=bins)
-
-    # normalizing the histogram
-    h_sum = h.sum()
-    if h_sum > 1:
-        h = h/h_sum
-
-    return h
-
-
-# In[10]:
-
-
-# # importing io module
-# import sys
-# sys.path.insert(1, "./../io_utils/")
-# sys.path.insert(1, "./../preprocessing/")
-# from io_utils import read_data, read_classes
-# from preprocessing import *
-# # reading data and class names
-# classes_names = read_classes('../ACdata_base/names.txt')
-# dataset_images, dataset_labels = read_data('../ACdata_base/')
-
-
-# In[11]:
-
-
-def HPP(image, bins=10, croped=True):
+    Params:
+        image: An image with the skeletonized / edge version of the original input image.
+        
+    Returns:
+        ToE/ToS: a vector containing the intensities and orientations of the pixels
+    """
     
-    if not croped:
-        image = crop(image)
+    Kx = np.array([[-2, 0, 2], 
+                   [-1, 0, 1], 
+                   [-2, 0, 2]], np.float32)
 
+    Ky = np.array([[2, 1, 2], 
+                   [0, 0, 0], 
+                   [-2, -1, -2]], np.float32)
+    
+    Ix = ndimage.filters.convolve(image, Kx)
+    Iy = ndimage.filters.convolve(image, Ky)
+    
+    G = np.hypot(Ix, Iy)
+    G = G / G.max()
+    # G = G[G != 0]
+    theta = np.arctan2(Iy, Ix)
+    # theta = theta[theta != 0]
+
+    Gs, _ = np.histogram(G, bins=bins)
+    # Gs = np.append(Gs, np.var(G))
+    thetas, _ = np.histogram(theta, bins=bins)
+    # thetas = np.append(thetas, np.var(theta))
+    G_sum = Gs.sum()
+    if G_sum > 1:
+        Gs = Gs / G_sum 
+    T_sum = thetas.sum()
+    if T_sum > 1:
+        thetas = thetas / T_sum
+
+    return np.append(Gs, thetas)
+
+
+# In[96]:
+
+
+def HPP(image, bins=10):
+    """(Horizontal Profile Projection)
+    Finds the projection of the horizontal lines in an image and allocate them to specific bins based on their positions
+
+    Params:
+        image: A binary image
+        
+    Returns:
+        h: a vector containing the number of pixels in each bin 
+    """
     white_pixels_in_row = image.sum(axis=1)
 
     h, h_bins = np.histogram(white_pixels_in_row, range=(1, white_pixels_in_row.max()), density=False, bins=bins)
@@ -466,12 +616,29 @@ def HPP(image, bins=10, croped=True):
     if h_sum > 1:
         h = h/h_sum
 
-    return [h.var()]
+    return h
+
+
+# In[97]:
+
+
+def LBP(image):
+
+    lbp = local_binary_pattern(image, 6, 1.5, method='nri_uniform').flatten()
+
+    h, _ = np.histogram(lbp, bins=100)
+
+    # normalizing the histogram
+    h_sum = h.sum()
+    if h_sum > 1:
+        h = h/h_sum
+    
+    return h
 
 
 # # 3. Testing
 
-# In[12]:
+# In[98]:
 
 
 def testing():
@@ -524,7 +691,7 @@ def testing():
         # d_1, d_2 = Diacritics(diacritics_image, text_image)
         # d = Diacritics(diacritics_image, cropped_image)
         wor = WOr(text_image)[0]
-        hpp = HPP(cropped_image)[0]
+        hpp = HPP(cropped_image)
         lvl = LVL(skeleton_image) #list of 5
         hvsl = HVSL(edge_image) #list of 2
         toe = ToE_ToS(edge_image,10) #list of 2
@@ -542,28 +709,27 @@ def testing():
         suptitle += "\nHPP: " + str(hpp)
         suptitle += "\nHVSL: " + str(hvsl)
         suptitle += "\nLVL: " + str(lvl)
-
         f.suptitle(suptitle)
 
-        axarr.imshow(test_image, cmap='gray')
+        axarr.imshow(cropped_image, cmap='gray')
         axarr.set_title(class_name)
 
 
-# In[13]:
+# In[99]:
 
 
 # if __name__ == '__main__':
-    # testing()
+#     testing()
 
 
-# In[14]:
+# In[100]:
 
 
 def create_py():
     get_ipython().system('jupyter nbconvert --to script feature_extraction.ipynb')
 
 
-# In[15]:
+# In[101]:
 
 
 if __name__ == '__main__':
