@@ -18,19 +18,15 @@
 # 6. Extract Text only
 # 7. Testing
 
-# In[15]:
+# In[6]:
 
 
 ##################################################### imports #####################################################
-from skimage import io, filters
 from skimage.morphology import skeletonize
 import cv2
-import os
 import matplotlib.pyplot as plt
 from random import randrange
 import numpy as np
-from skimage.exposure import histogram
-from matplotlib.pyplot import bar
 from skimage.segmentation import flood_fill
 
 
@@ -41,7 +37,7 @@ from skimage.segmentation import flood_fill
 # - Input: --
 # - Output: --
 
-# In[16]:
+# In[27]:
 
 
 def analyze_histogram(binary, show_hist=False):
@@ -90,7 +86,7 @@ def analyze_histogram(binary, show_hist=False):
 
 # # 2. Binarization
 
-# In[17]:
+# In[8]:
 
 
 def binarize(image):
@@ -112,22 +108,11 @@ def binarize(image):
     return corrected_binary_image
 
 
-# In[18]:
-
-
-#  np.array([[0,1,0],[1,1,1],[0,1,0]])
-
-
-# In[19]:
+# In[10]:
 
 
 def crop(img):
-    # morph_img = img.copy()
     morph_img = img
-    # element = cv2.getStructuringElement(cv2.MORPH_RECT,(3,3),( 0, 0 ))
-    # element = cv2.getStructuringElement(cv2.MORPH_CROSS,(3,3))
-    # morph_img = cv2.morphologyEx(morph_img, cv2.MORPH_OPEN, element)
-    # morph_img = cv2.morphologyEx(morph_img, cv2.MORPH_CLOSE, element)
 
     rows = morph_img.sum(axis=1)
     cols = morph_img.sum(axis=0)
@@ -148,9 +133,66 @@ def crop(img):
     return cropped_img
 
 
+# In[11]:
+
+
+def image_resize(image, width = None, height = None, inter = cv2.INTER_CUBIC):
+    # initialize the dimensions of the image to be resized and
+    # grab the image size
+    dim = None
+    (h, w) = image.shape[:2]
+
+    # if both the width and height are None, then return the
+    # original image
+    if width is None and height is None:
+        return image
+
+    # check to see if the width is None
+    if width is None:
+        # if h <= height:
+            # return image
+        # calculate the ratio of the height and construct the
+        # dimensions
+        t = int(height / h)
+        x = int(h / height)
+        if x == 0:
+            height = int(h*t)
+        else:
+            height = int(h/x)
+        if h > height: #shrink
+            inter = cv2.INTER_AREA
+        r = height / float(h)
+        dim = (int(w * r), height)
+
+    # otherwise, the height is None
+    else:
+        # if w <= width:
+            # return image
+        # calculate the ratio of the width and construct the
+        # dimensions
+        t = int(width / w)
+        width = t * w
+        x = int(w / width)
+        if x == 0:
+            width = int(w*t)
+        else:
+            width = int(w/x)
+
+        if w > width: #shrink
+            inter = cv2.INTER_AREA
+        r = width / float(w)
+        dim = (width, int(h * r))
+
+    # resize the image
+    resized = cv2.resize(image, dim, interpolation = inter)
+
+    # return the resized image
+    return resized
+
+
 # # 3. Extract Edges
 
-# In[20]:
+# In[12]:
 
 
 def extract_edges(image):
@@ -180,7 +222,7 @@ def extract_edges(image):
 
 # # 4. Extract Skeleton
 
-# In[21]:
+# In[14]:
 
 
 def extract_skeleton(image):
@@ -192,9 +234,6 @@ def extract_skeleton(image):
     Returns:
         skeleton: The skeletonized image
     """
-    # We start by binarizing the image
-    # binary = binarize(image)
-
     # Use Skimage's skeletonize method with the array representation of the binary image as input
     skeleton = skeletonize(np.asarray(image)).astype(np.uint8)
 
@@ -203,7 +242,7 @@ def extract_skeleton(image):
 
 # # 5. Separate Diacritics from Text
 
-# In[22]:
+# In[15]:
 
 
 def separate_diacritics_and_text_utility(image):
@@ -248,7 +287,7 @@ def separate_diacritics_and_text_utility(image):
     return diacritics_image, text_image
 
 
-# In[23]:
+# In[16]:
 
 
 def separate_diacritics_and_text(image, diacritics_ratio=0.2, max_iterations=10, text_convergence_threshold=5):
@@ -279,7 +318,7 @@ def separate_diacritics_and_text(image, diacritics_ratio=0.2, max_iterations=10,
 
 # # 6. Testing
 
-# In[24]:
+# In[17]:
 
 
 def testing():
@@ -347,38 +386,29 @@ def testing():
     
 
 
-# In[25]:
-
-
-# # importing io module
-# import sys
-# sys.path.insert(1, "./../io_utils/")
-# from io_utils import read_data, read_classes
-
-# # reading data and class names
-# classes_names = read_classes('../ACdata_base/names.txt')
-# dataset_images, dataset_labels = read_data('../ACdata_base/')
-
-
-# 
-
-# In[26]:
+# In[21]:
 
 
 # if __name__ == '__main__':
     # testing()
 
 
-# In[27]:
+# In[28]:
 
 
 def create_py():
     get_ipython().system('jupyter nbconvert --to script preprocessing.ipynb')
 
 
-# In[28]:
+# In[29]:
 
 
 if __name__ == '__main__':
     create_py()
+
+
+# In[ ]:
+
+
+
 
