@@ -65,7 +65,7 @@ def read_data(dataset_path='./ACdata_base', flags=0, debug=False):
                 print('reading: ', os.path.join(dirname, filename))
             img = cv2.imread(os.path.join(dirname, filename), flags)
             dataset_images.append(img)
-            dataset_labels.append(int(dirname[-1])-1)
+            dataset_labels.append(int(dirname[-1]))
     
     return dataset_images, dataset_labels
             
@@ -73,7 +73,7 @@ def read_data(dataset_path='./ACdata_base', flags=0, debug=False):
 
 # # 3. Read Classes Names
 
-# In[2]:
+# In[3]:
 
 
 def read_classes(names_path='./ACdata_base/names.txt'):
@@ -96,7 +96,7 @@ def read_classes(names_path='./ACdata_base/names.txt'):
 
 # # 4. Split data to train and test
 
-# In[3]:
+# In[4]:
 
 
 def split_data(X, y, test_size=0.33):
@@ -153,14 +153,14 @@ if __name__ == '__main__':
     testing()
 
 
-# In[7]:
+# In[3]:
 
 
 def create_py():
     get_ipython().system('jupyter nbconvert --to script io_utils.ipynb')
 
 
-# In[8]:
+# In[4]:
 
 
 if __name__ == '__main__':
