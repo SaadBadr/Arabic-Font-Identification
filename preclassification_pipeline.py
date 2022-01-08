@@ -16,7 +16,7 @@ def preprocessing_pipline(img, separate_diacritics=True):
     """
 
     binary_img = preprocessing.binarize(img)
-    cropped_img = preprocessing.image_resize(preprocessing.crop(binary_img), height=64)
+    cropped_img = preprocessing.image_resize(preprocessing.crop(binary_img), height=69)
     edge_img = preprocessing.extract_edges(cropped_img)
     skeleton_img = preprocessing.extract_skeleton(cropped_img)
     diacritics_img, text_img = None, None
@@ -42,10 +42,10 @@ def feature_extraction_pipeline(cropped_img, edge_img, skeleton_img, diacritics_
     toe = feature_extraction.ToE_ToS(edge_img,12) #12
     tos = feature_extraction.ToE_ToS(skeleton_img,10) #10
     lvl = feature_extraction.LVL(skeleton_img)
-    tth = feature_extraction.Tth(skeleton_img, edge_img, 64) #10
+    tth = feature_extraction.Tth(skeleton_img, edge_img, 69) #10
     sds = feature_extraction.Diacritics(diacritics_img, 128)
     wor = feature_extraction.WOr(text_img)
-    hpp = feature_extraction.HPP(cropped_img, 64) #13
+    hpp = feature_extraction.HPP(cropped_img, 69) #13
     lpq = feature_extraction.LPQ(cropped_img) #13
 
     return hvsl, toe, tos, lvl, tth, sds, wor, hpp, lpq

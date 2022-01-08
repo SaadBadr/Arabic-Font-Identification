@@ -171,7 +171,6 @@ def image_resize(image, width = None, height = None, inter = cv2.INTER_CUBIC):
         # calculate the ratio of the width and construct the
         # dimensions
         t = int(width / w)
-        width = t * w
         x = int(w / width)
         if x == 0:
             width = int(w*t)
@@ -209,7 +208,7 @@ def extract_edges(image):
         image = image * 255
         image = image.astype(np.uint8)
 
-    img_blur = cv2.GaussianBlur(image,(3,3), sigmaX=0, sigmaY=0)
+    img_blur = cv2.GaussianBlur(image,(5,5), sigmaX=0, sigmaY=0)
 
     # Use Canny edge detection to extract edges
     edge_image = cv2.Canny(image=img_blur, threshold1=100, threshold2=200)
