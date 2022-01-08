@@ -39,7 +39,11 @@ for dirname, _, filenames in os.walk(dataset_path):
         except:
             pass
         execution_time = time.time() - start_time
-
+        execution_time = round(execution_time, 2)
+        
+        if execution_time == 0:
+            execution_time = 0.001
+            
         if(index != 0):
             results_file.write('\n')
         results_file.write(str(prediction[0]))
