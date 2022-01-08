@@ -24,7 +24,7 @@
 # - Input: --
 # - Output: --
 
-# In[8]:
+# In[1]:
 
 
 ##################################################### imports #####################################################
@@ -38,7 +38,7 @@ from scipy.signal import convolve2d
 # # 2. Text thickness (Tth)
 # Stroke thickness plays an important role in defining the style. Some styles use a flat pen, whereas some others use a pointed one. In some styles, calligraphers alter the thickness while writing (via pushing down the pen or the opposite), whereas in others, the thickness is always preserved. Modeling such a feature in form of a descriptor will help the machine to understand more specificities of each style. Text thickness (Tth) descriptor codifies the appearance frequency of different line thicknesses in a text image. To extract this descriptor, we employ both the skeleton and edge image, and thickness is determined by the distance between skeleton and edges.
 
-# In[9]:
+# In[2]:
 
 
 def Tth(skeleton_img, edge_img, bins=5):
@@ -87,10 +87,10 @@ def Tth(skeleton_img, edge_img, bins=5):
 # Thuluth and Mohakik have a similar writing style that is decorated with diacritics
 # A Diacritics descriptor will be used to inspect the density of diacritics in a given text image.
 
-# In[10]:
+# In[3]:
 
 
-def Diacritics(d_img, bins=12):
+def DD(d_img, bins=12):
     return np.histogram(d_img.sum(axis=0), bins=bins)[0]/d_img.shape[1]
 
 
@@ -99,7 +99,7 @@ def Diacritics(d_img, bins=12):
 # WOr algorithm was used to distinguish Diwani from other styles. Diwani style yieldan orientation average of about 45 degrees compared to 0 degrees by other styles.
 # 
 
-# In[11]:
+# In[4]:
 
 
 def WOr(img):
@@ -197,7 +197,7 @@ def WOr(img):
     return np.append(rhos, np.append(thetas, w))
 
 
-# In[12]:
+# In[5]:
 
 
 def HVSL(edge_image):
@@ -247,7 +247,7 @@ def HVSL(edge_image):
     return HVSL_features
 
 
-# In[13]:
+# In[6]:
 
 
 def LVL(skeleton_image):
@@ -303,7 +303,7 @@ def LVL(skeleton_image):
     return LVL
 
 
-# In[14]:
+# In[7]:
 
 
 def ToE_ToS(image, bins=10):
@@ -349,7 +349,7 @@ def ToE_ToS(image, bins=10):
     return np.append(Gs, thetas)
 
 
-# In[15]:
+# In[8]:
 
 
 def HPP(image, bins=10):
@@ -374,7 +374,7 @@ def HPP(image, bins=10):
     return h
 
 
-# In[16]:
+# In[9]:
 
 
 def LPQ(img,winSize=5,freqestim=2,hist_size=1024):
@@ -440,7 +440,7 @@ def LPQ(img,winSize=5,freqestim=2,hist_size=1024):
 
 # # 3. Testing
 
-# In[17]:
+# In[10]:
 
 
 def testing():
@@ -489,7 +489,7 @@ def testing():
         assert len(np.unique(np.asarray(binary_image))) == 2
 
         tth = Tth(skeleton_image, edge_image)
-        diacritics = Diacritics(diacritics_image)
+        diacritics = DD(diacritics_image)
         wor = WOr(text_image)[0]
         hpp = HPP(cropped_image)
         lvl = LVL(skeleton_image) #list of 5
@@ -513,21 +513,21 @@ def testing():
         axarr.set_title(class_name)
 
 
-# In[18]:
+# In[11]:
 
 
 # if __name__ == '__main__':
 #     testing()
 
 
-# In[19]:
+# In[12]:
 
 
 def create_py():
     get_ipython().system('jupyter nbconvert --to script feature_extraction.ipynb')
 
 
-# In[5]:
+# In[13]:
 
 
 if __name__ == '__main__':
