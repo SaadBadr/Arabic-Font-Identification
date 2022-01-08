@@ -28,9 +28,10 @@ for dirname, _, filenames in os.walk(dataset_path):
     for index, filename in enumerate(filenames):
         
         prediction = [-1]
-        start_time = time.time()
         try:
             img = cv2.imread(os.path.join(dirname, filename), 0)
+
+            start_time = time.time()
 
             features = preprocessing_feature_extraction_pipeline([img])
 
