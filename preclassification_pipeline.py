@@ -43,7 +43,7 @@ def feature_extraction_pipeline(cropped_img, edge_img, skeleton_img, diacritics_
     tos = feature_extraction.ToE_ToS(skeleton_img,10) #10
     lvl = feature_extraction.LVL(skeleton_img)
     tth = feature_extraction.Tth(skeleton_img, edge_img, 69) #10
-    sds = feature_extraction.Diacritics(diacritics_img, 128)
+    sds = feature_extraction.DD(diacritics_img, 128)
     wor = feature_extraction.WOr(text_img)
     hpp = feature_extraction.HPP(cropped_img, 69) #13
     lpq = feature_extraction.LPQ(cropped_img) #13
